@@ -26,6 +26,11 @@ SOFTWARE.
 */
 
 #include "ImGuiFileDialog.h"
+#include "Engine/Editor/EditorDatabase.h"
+#include "CrossPlatform/File/FolderMeta.h"
+using namespace Algorithm;
+using namespace XenonEngine;
+using namespace CrossPlatform;
 
 #ifdef __cplusplus
 
@@ -459,10 +464,15 @@ namespace IGFD
 		return arr;
 	}
 
-	std::vector<std::string> IGFD::Utils::GetDrivesList()
+	std::vector<std::string> IGFD::Utils::GetDrivesList(bool useXenonFileSystem)
 	{
 		std::vector<std::string> res;
-
+        if (useXenonFileSystem)
+        {
+            String drive = FileHeader::Root_Drive.Substring(0, FileHeader::Root_Drive.Count() - 1);
+            res.push_back(drive.CString());
+            return res;
+        }
 #ifdef WIN32
 		const DWORD mydrives = 2048;
 		char lpBuffer[2048];
@@ -480,12 +490,17 @@ namespace IGFD
 		return res;
 	}
 
-	bool IGFD::Utils::IsDirectoryExist(const std::string& name)
+	bool IGFD::Utils::IsDirectoryExist(const std::string& name, bool useXenonFileSystem/* = false*/)
 	{
 		bool bExists = false;
 
 		if (!name.empty())
 		{
+            if (useXenonFileSystem)
+            {
+                FolderMeta* folder = EditorDatabase::Get().GetFolder(name.c_str());
+                return folder != nullptr;
+            }
 #ifdef USE_STD_FILESYSTEM
 			namespace fs = std::filesystem;
 #ifdef WIN32
@@ -509,14 +524,19 @@ namespace IGFD
 		return bExists;    // this is not a directory!
 	}
 
-	bool IGFD::Utils::CreateDirectoryIfNotExist(const std::string& name)
+	bool IGFD::Utils::CreateDirectoryIfNotExist(const std::string& name, bool useXenonFileSystem /*= false*/)
 	{
 		bool res = false;
 
 		if (!name.empty())
 		{
-			if (!IsDirectoryExist(name))
+			if (!IsDirectoryExist(name, useXenonFileSystem))
 			{
+                if (useXenonFileSystem)
+                {
+                    EditorDatabase::Get().CreateFolder(name.c_str());
+                    return true;
+                }
 #ifdef WIN32
 #ifdef USE_STD_FILESYSTEM
 				namespace fs = std::filesystem;
@@ -1188,7 +1208,7 @@ namespace IGFD
 			SetDefaultFileName(".");
 		else
 			SetDefaultFileName(puDLGDefaultFileName);
-		ScanDir(vFileDialogInternal, GetCurrentPath());
+		ScanDir(vFileDialogInternal, GetCurrentPath(), true);
 	}
 
 	void IGFD::FileManager::SortFields(const FileDialogInternal& vFileDialogInternal, const SortingFieldEnum& vSortingField, const bool& vCanChangeOrder)
@@ -1477,17 +1497,17 @@ namespace IGFD
 
 		vFileDialogInternal.puFilterManager.prFillFileStyle(infos);
 
-		prCompleteFileInfos(infos);
+		prCompleteFileInfos(infos, true);
 		prFileList.push_back(infos);
 	}
 
-	void IGFD::FileManager::ScanDir(const FileDialogInternal& vFileDialogInternal, const std::string& vPath)
+	void IGFD::FileManager::ScanDir(const FileDialogInternal& vFileDialogInternal, const std::string& vPath, bool useXenonFileSystem /*= false*/)
 	{
 		std::string	path = vPath;
 
 		if (prCurrentPathDecomposition.empty())
 		{
-			SetCurrentDir(path);
+			SetCurrentDir(path, true);
 		}
 
 		if (!prCurrentPathDecomposition.empty())
@@ -1498,6 +1518,36 @@ namespace IGFD
 #endif // WIN32
 
 			ClearFileLists();
+            if (useXenonFileSystem)
+            {
+                FolderMeta* dir = EditorDatabase::Get().GetFolder(path.c_str());
+                assert(dir != nullptr);
+                AddFile(vFileDialogInternal, path, "..", 'd');
+                if (path[path.size() - 1] == PATH_SEP)
+                {
+                    path = path.substr(0, path.size() - 1);
+                }
+                for (int i = 0; i < dir->GetFileCount(); i++)
+                {
+                    IFileMeta* file = dir->GetFile(i);
+                    char fileType = 0;
+                    switch (file->GetFileHeader().GetFileType())
+                    {
+                    case CrossPlatform::None:
+                        throw "Undefined File Type";
+                        break;
+                    case CrossPlatform::FileTypeFolder:
+                        fileType = 'd';
+                        break;
+                    default:
+                        fileType = 'f';
+                        break;
+                    }
+                    AddFile(vFileDialogInternal, path, file->GetFileHeader().GetFileName().CString(), fileType);
+                }
+                SortFields(vFileDialogInternal, puSortingField, false);
+                return;
+            }
 
 #ifdef USE_STD_FILESYSTEM
 			//const auto wpath = IGFD::Utils::WGetString(path.c_str());
@@ -1558,7 +1608,7 @@ namespace IGFD
 
 	bool IGFD::FileManager::GetDrives()
 	{
-		auto drives = IGFD::Utils::GetDrivesList();
+		auto drives = IGFD::Utils::GetDrivesList(true);
 		if (!drives.empty())
 		{
 			prCurrentPath.clear();
@@ -1694,7 +1744,7 @@ namespace IGFD
 		return "";
 	}
 
-	void IGFD::FileManager::prCompleteFileInfos(const std::shared_ptr<FileInfos>& vInfos)
+	void IGFD::FileManager::prCompleteFileInfos(const std::shared_ptr<FileInfos>& vInfos, bool useXenonFileSystem)
 	{
 		if (!vInfos.use_count())
 			return;
@@ -1719,9 +1769,14 @@ namespace IGFD
 
 			std::string fpn;
 
-			if (vInfos->fileType == 'f' || vInfos->fileType == 'l' || vInfos->fileType == 'd') // file
-				fpn = vInfos->filePath + std::string(1u, PATH_SEP) + vInfos->fileNameExt;
-
+            if (vInfos->fileType == 'f' || vInfos->fileType == 'l' || vInfos->fileType == 'd') // file
+            {
+                fpn = vInfos->filePath + std::string(1u, PATH_SEP) + vInfos->fileNameExt;
+                if (useXenonFileSystem)
+                {
+                    fpn = EditorDatabase::Get().ConvertVirtualPath(fpn.c_str()).CString();
+                }
+            }
 			struct stat statInfos = {};
 			char timebuf[100];
 			int result = stat(fpn.c_str(), &statInfos);
@@ -1781,7 +1836,7 @@ namespace IGFD
 			prLastSelectedFileName = vFileName;
 	}
 
-	void IGFD::FileManager::SetCurrentDir(const std::string& vPath)
+	void IGFD::FileManager::SetCurrentDir(const std::string& vPath, bool useXenonFileSystem/* = false*/)
 	{
 		std::string path = vPath;
 #ifdef WIN32
@@ -1789,6 +1844,37 @@ namespace IGFD
 			path += std::string(1u, PATH_SEP);
 #endif // WIN32
 		
+        if (useXenonFileSystem)
+        {
+            String folderPath(path.c_str());
+            FolderMeta* folder = EditorDatabase::Get().GetFolder(folderPath);
+            if (folder == nullptr)
+            {
+                folderPath = FileHeader::Root_Drive;
+                folder = EditorDatabase::Get().GetFolder(folderPath);
+            }
+
+            if (folder)
+            {
+                if (folderPath[folderPath.Count() - 1] == PATH_SEP)
+                {
+                    folderPath = folderPath.Substring(0, folderPath.Count() - 1);
+                }
+                prCurrentPath = folderPath.CString();
+                IGFD::Utils::SetBuffer(puInputPathBuffer, MAX_PATH_BUFFER_SIZE, prCurrentPath);
+                Vector<String> splitedVector = folderPath.Split(PATH_SEP);
+                for (int i = 0 ; i < splitedVector.Count(); i++)
+                {
+                    prCurrentPathDecomposition.push_back(splitedVector[i].CString());
+                }
+                if (!prCurrentPathDecomposition.empty())
+                {
+                    puFsRoot = prCurrentPathDecomposition[0];
+                }
+            }
+            return;
+        }
+
 #ifdef USE_STD_FILESYSTEM
 		namespace fs = std::filesystem;
 		bool dir_opened = fs::is_directory(vPath);
@@ -1857,7 +1943,7 @@ namespace IGFD
 		{
 			std::string path = prCurrentPath + std::string(1u, PATH_SEP) + vPath;
 
-			res = IGFD::Utils::CreateDirectoryIfNotExist(path);
+			res = IGFD::Utils::CreateDirectoryIfNotExist(path, true);
 		}
 
 		return res;
@@ -1969,7 +2055,7 @@ namespace IGFD
 					newPath = prCurrentPath + std::string(1u, PATH_SEP) + vInfos->fileNameExt;
 			}
 
-			if (IGFD::Utils::IsDirectoryExist(newPath))
+			if (IGFD::Utils::IsDirectoryExist(newPath,true))
 			{
 				if (puShowDrives)
 				{
@@ -2146,7 +2232,7 @@ namespace IGFD
 	{
 		if (IMGUI_BUTTON(resetButtonString))
 		{
-			SetCurrentPath(".");
+			SetCurrentPath(FileHeader::Root_Drive.CString());
 			OpenCurrentPath(vFileDialogInternal);
 		}
 		if (ImGui::IsItemHovered())
@@ -3646,7 +3732,7 @@ namespace IGFD
 					}
 					else if (fdFile.puDLGDirectoryMode) // directory mode
 						fdFile.SetDefaultFileName(".");
-					fdFile.ScanDir(prFileDialogInternal, fdFile.puDLGpath);
+					fdFile.ScanDir(prFileDialogInternal, fdFile.puDLGpath, true);
 				}
 
 				// draw dialog parts

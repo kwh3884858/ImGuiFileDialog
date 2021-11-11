@@ -703,8 +703,8 @@ namespace IGFD
 	public:
 		static bool Splitter(bool split_vertically, float thickness, float* size1, float* size2, float min_size1, float min_size2, float splitter_long_axis_size = -1.0f);
 		static bool ReplaceString(std::string& str, const std::string& oldStr, const std::string& newStr);
-		static bool IsDirectoryExist(const std::string& name);
-		static bool CreateDirectoryIfNotExist(const std::string& name);
+		static bool IsDirectoryExist(const std::string& name, bool useXenonFileSystem = false);
+		static bool CreateDirectoryIfNotExist(const std::string& name, bool useXenonFileSystem = false);
 		static PathStruct ParsePathFileName(const std::string& vPathFileName);
 		static void AppendToBuffer(char* vBuffer, size_t vBufferLen, const std::string& vStr);
 		static void ResetBuffer(char* vBuffer);
@@ -716,7 +716,7 @@ namespace IGFD
 		static std::wstring string_to_wstring(const std::string& mbstr);
 #endif
 		static std::vector<std::string> SplitStringToVector(const std::string& text, char delimiter, bool pushEmpty);
-		static std::vector<std::string> GetDrivesList();
+		static std::vector<std::string> GetDrivesList(bool useXenonFileSystem = false);
 	};
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -881,7 +881,7 @@ namespace IGFD
 		static std::string prRoundNumber(double vvalue, int n);											// custom rounding number
 		static std::string prFormatFileSize(size_t vByteSize);											// format file size field
 		static std::string prOptimizeFilenameForSearchOperations(const std::string& vFileNameExt);		// turn all text in lower case for search facilitie
-		static void prCompleteFileInfos(const std::shared_ptr<FileInfos>& FileInfos);					// set time and date infos of a file (detail view mode)
+		static void prCompleteFileInfos(const std::shared_ptr<FileInfos>& FileInfos, bool useXenonFileSystem = false);					// set time and date infos of a file (detail view mode)
 		void prRemoveFileNameInSelection(const std::string& vFileName);									// selection : remove a file name
 		void prAddFileNameInSelection(const std::string& vFileName, bool vSetLastSelectionFileName);	// selection : add a file name
 		void AddFile(const FileDialogInternal& vFileDialogInternal, 
@@ -919,8 +919,8 @@ namespace IGFD
 			const std::shared_ptr<FileInfos>& vInfos);															// select filename
 		
 		//depend of dirent.h
-		void SetCurrentDir(const std::string& vPath);													// define current directory for scan
-		void ScanDir(const FileDialogInternal& vFileDialogInternal, const std::string& vPath);			// scan the directory for retrieve the file list
+		void SetCurrentDir(const std::string& vPath, bool useXenonFileSystem = false);													// define current directory for scan
+		void ScanDir(const FileDialogInternal& vFileDialogInternal, const std::string& vPath, bool useXenonFileSystem = false);			// scan the directory for retrieve the file list
 
 	public:
 		std::string GetResultingPath();

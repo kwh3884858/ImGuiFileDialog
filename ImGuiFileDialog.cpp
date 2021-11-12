@@ -1776,7 +1776,7 @@ namespace IGFD
                 fpn = vInfos->filePath + std::string(1u, PATH_SEP) + vInfos->fileNameExt;
                 if (useXenonFileSystem)
                 {
-                    fpn = EditorDatabase::Get().ConvertVirtualPath(fpn.c_str()).CString();
+                    fpn = EditorDatabase::Get().ConvertToRealPath(fpn.c_str()).CString();
                 }
             }
 			struct stat statInfos = {};

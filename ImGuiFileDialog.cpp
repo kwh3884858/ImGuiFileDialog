@@ -469,7 +469,7 @@ namespace IGFD
 		std::vector<std::string> res;
         if (useXenonFileSystem)
         {
-            String drive = FileHeader::Root_Drive.Substring(0, FileHeader::Root_Drive.Count() - 1);
+            String drive = FileHeader::Root_Drive.Substring(0, FileHeader::Root_Drive.Count());
             res.push_back(drive.CString());
             return res;
         }
@@ -1208,7 +1208,7 @@ namespace IGFD
 			SetDefaultFileName(".");
 		else
 			SetDefaultFileName(puDLGDefaultFileName);
-		ScanDir(vFileDialogInternal, GetCurrentPath(), true);
+		ScanDir(vFileDialogInternal, GetCurrentPath(), vFileDialogInternal.puUseXenonFileSystem);
 	}
 
 	void IGFD::FileManager::SortFields(const FileDialogInternal& vFileDialogInternal, const SortingFieldEnum& vSortingField, const bool& vCanChangeOrder)
@@ -1497,7 +1497,7 @@ namespace IGFD
 
 		vFileDialogInternal.puFilterManager.prFillFileStyle(infos);
 
-		prCompleteFileInfos(infos, true);
+		prCompleteFileInfos(infos, vFileDialogInternal.puUseXenonFileSystem);
 		prFileList.push_back(infos);
 	}
 
@@ -1507,7 +1507,7 @@ namespace IGFD
 
 		if (prCurrentPathDecomposition.empty())
 		{
-			SetCurrentDir(path, true);
+			SetCurrentDir(path, useXenonFileSystem);
 		}
 
 		if (!prCurrentPathDecomposition.empty())
@@ -1521,29 +1521,31 @@ namespace IGFD
             if (useXenonFileSystem)
             {
                 FolderMeta* dir = EditorDatabase::Get().GetFolder(path.c_str());
-                assert(dir != nullptr);
-                AddFile(vFileDialogInternal, path, "..", 'd');
-                if (path[path.size() - 1] == PATH_SEP)
+                if (dir)
                 {
-                    path = path.substr(0, path.size() - 1);
-                }
-                for (int i = 0; i < dir->GetFileCount(); i++)
-                {
-                    IFileMeta* file = dir->GetFile(i);
-                    char fileType = 0;
-                    switch (file->GetFileHeader().GetFileType())
+                    AddFile(vFileDialogInternal, path, "..", 'd');
+                    if (path[path.size() - 1] == PATH_SEP)
                     {
-                    case CrossPlatform::None:
-                        throw "Undefined File Type";
-                        break;
-                    case CrossPlatform::FileTypeFolder:
-                        fileType = 'd';
-                        break;
-                    default:
-                        fileType = 'f';
-                        break;
+                        path = path.substr(0, path.size() - 1);
                     }
-                    AddFile(vFileDialogInternal, path, file->GetFileHeader().GetFileName().CString(), fileType);
+                    for (int i = 0; i < dir->GetFileCount(); i++)
+                    {
+                        IFileMeta* file = dir->GetFile(i);
+                        char fileType = 0;
+                        switch (file->GetFileHeader().GetFileType())
+                        {
+                        case CrossPlatform::None:
+                            throw "Undefined File Type";
+                            break;
+                        case CrossPlatform::FileTypeFolder:
+                            fileType = 'd';
+                            break;
+                        default:
+                            fileType = 'f';
+                            break;
+                        }
+                        AddFile(vFileDialogInternal, path, file->GetFileHeader().GetFileName().CString(), fileType);
+                    }
                 }
                 SortFields(vFileDialogInternal, puSortingField, false);
                 return;
@@ -1606,9 +1608,9 @@ namespace IGFD
 		}
 	}
 
-	bool IGFD::FileManager::GetDrives()
+	bool IGFD::FileManager::GetDrives(bool useXenonFileSystem/* = false*/)
 	{
-		auto drives = IGFD::Utils::GetDrivesList(true);
+		auto drives = IGFD::Utils::GetDrivesList(useXenonFileSystem);
 		if (!drives.empty())
 		{
 			prCurrentPath.clear();
@@ -1935,7 +1937,7 @@ namespace IGFD
 		}
 	}
 
-	bool IGFD::FileManager::CreateDir(const std::string& vPath)
+	bool IGFD::FileManager::CreateDir(const std::string& vPath, bool useXenonFileSystem /*= false*/)
 	{
 		bool res = false;
 
@@ -1943,7 +1945,7 @@ namespace IGFD
 		{
 			std::string path = prCurrentPath + std::string(1u, PATH_SEP) + vPath;
 
-			res = IGFD::Utils::CreateDirectoryIfNotExist(path, true);
+			res = IGFD::Utils::CreateDirectoryIfNotExist(path, useXenonFileSystem);
 		}
 
 		return res;
@@ -2026,7 +2028,7 @@ namespace IGFD
 		IGFD::Utils::SetBuffer(puFileNameBuffer, MAX_FILE_DIALOG_NAME_BUFFER, vFileName);
 	}
 
-	bool IGFD::FileManager::SelectDirectory(const std::shared_ptr<FileInfos>& vInfos)
+	bool IGFD::FileManager::SelectDirectory(const std::shared_ptr<FileInfos>& vInfos, bool useXenonEngineFileSystem)
 	{
 		if (!vInfos.use_count())
 			return false;
@@ -2055,7 +2057,7 @@ namespace IGFD
 					newPath = prCurrentPath + std::string(1u, PATH_SEP) + vInfos->fileNameExt;
 			}
 
-			if (IGFD::Utils::IsDirectoryExist(newPath,true))
+			if (IGFD::Utils::IsDirectoryExist(newPath, useXenonEngineFileSystem))
 			{
 				if (puShowDrives)
 				{
@@ -2210,7 +2212,7 @@ namespace IGFD
 			if (IMGUI_BUTTON(okButtonString))
 			{
 				std::string newDir = std::string(puDirectoryNameBuffer);
-				if (CreateDir(newDir))
+				if (CreateDir(newDir, vFileDialogInternal.puUseXenonFileSystem))
 				{
 					SetCurrentPath(prCurrentPath + std::string(1u, PATH_SEP) + newDir);
 					OpenCurrentPath(vFileDialogInternal);
@@ -2232,7 +2234,14 @@ namespace IGFD
 	{
 		if (IMGUI_BUTTON(resetButtonString))
 		{
-			SetCurrentPath(FileHeader::Root_Drive.CString());
+            if (vFileDialogInternal.puUseXenonFileSystem)
+            {
+                SetCurrentPath(FileHeader::Root_Drive.CString());
+            }
+            else
+            {
+                SetCurrentPath(".");
+            }
 			OpenCurrentPath(vFileDialogInternal);
 		}
 		if (ImGui::IsItemHovered())
@@ -2413,7 +2422,7 @@ namespace IGFD
 
 		if (puFileManager.puDrivesClicked)
 		{
-			if (puFileManager.GetDrives())
+			if (puFileManager.GetDrives(puUseXenonFileSystem))
 			{
 				puFileManager.ApplyFilteringOnFileList(*this);
 			}
@@ -3357,6 +3366,7 @@ namespace IGFD
 		const char* vFilters,
 		const std::string& vPath,
 		const std::string& vFileName,
+        bool useXenonFileSystem,
 		const int& vCountSelectionMax,
 		UserDatas vUserDatas,
 		ImGuiFileDialogFlags vFlags)
@@ -3389,6 +3399,7 @@ namespace IGFD
 		prFileDialogInternal.puFileManager.ClearAll();
 		
 		prFileDialogInternal.puShowDialog = true;					// open dialog
+        prFileDialogInternal.puUseXenonFileSystem = useXenonFileSystem;
 	}
 
 	// path and filename are obtained from filePathName
@@ -3397,6 +3408,7 @@ namespace IGFD
 		const std::string& vTitle,
 		const char* vFilters,
 		const std::string& vFilePathName,
+        bool useXenonFileSystem,
 		const int& vCountSelectionMax,
 		UserDatas vUserDatas,
 		ImGuiFileDialogFlags vFlags)
@@ -3440,6 +3452,7 @@ namespace IGFD
 		prFileDialogInternal.puFileManager.ClearAll();
 		
 		prFileDialogInternal.puShowDialog = true;
+        prFileDialogInternal.puUseXenonFileSystem = useXenonFileSystem;
 	}
 
 	// with pane
@@ -3451,6 +3464,7 @@ namespace IGFD
 		const std::string& vPath,
 		const std::string& vFileName,
 		const PaneFun& vSidePane,
+        bool useXenonFileSystem,
 		const float& vSidePaneWidth,
 		const int& vCountSelectionMax,
 		UserDatas vUserDatas,
@@ -3486,6 +3500,7 @@ namespace IGFD
 		prFileDialogInternal.puFileManager.ClearAll();
 		
 		prFileDialogInternal.puShowDialog = true;					// open dialog
+        prFileDialogInternal.puUseXenonFileSystem = useXenonFileSystem;
 	}
 
 	// with pane
@@ -3496,6 +3511,7 @@ namespace IGFD
 		const char* vFilters,
 		const std::string& vFilePathName,
 		const PaneFun& vSidePane,
+        bool useXenonFileSystem,
 		const float& vSidePaneWidth,
 		const int& vCountSelectionMax,
 		UserDatas vUserDatas,
@@ -3539,6 +3555,7 @@ namespace IGFD
 		prFileDialogInternal.puFileManager.ClearAll();
 
 		prFileDialogInternal.puShowDialog = true;
+        prFileDialogInternal.puUseXenonFileSystem = useXenonFileSystem;
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3560,7 +3577,7 @@ namespace IGFD
 
 		OpenDialog(
 			vKey, vTitle, vFilters,
-			vPath, vFileName,
+			vPath, vFileName, false,
 			vCountSelectionMax, vUserDatas, vFlags);
 
 		prFileDialogInternal.puDLGmodal = true;
@@ -3580,7 +3597,7 @@ namespace IGFD
 
 		OpenDialog(
 			vKey, vTitle, vFilters,
-			vFilePathName,
+			vFilePathName, false,
 			vCountSelectionMax, vUserDatas, vFlags);
 
 		prFileDialogInternal.puDLGmodal = true;
@@ -3606,7 +3623,7 @@ namespace IGFD
 		OpenDialog(
 			vKey, vTitle, vFilters,
 			vPath, vFileName,
-			vSidePane, vSidePaneWidth,
+			vSidePane, false, vSidePaneWidth,
 			vCountSelectionMax, vUserDatas, vFlags);
 
 		prFileDialogInternal.puDLGmodal = true;
@@ -3631,7 +3648,7 @@ namespace IGFD
 		OpenDialog(
 			vKey, vTitle, vFilters,
 			vFilePathName,
-			vSidePane, vSidePaneWidth,
+			vSidePane, false, vSidePaneWidth,
 			vCountSelectionMax, vUserDatas, vFlags);
 
 		prFileDialogInternal.puDLGmodal = true;
@@ -3732,7 +3749,7 @@ namespace IGFD
 					}
 					else if (fdFile.puDLGDirectoryMode) // directory mode
 						fdFile.SetDefaultFileName(".");
-					fdFile.ScanDir(prFileDialogInternal, fdFile.puDLGpath, true);
+					fdFile.ScanDir(prFileDialogInternal, fdFile.puDLGpath, prFileDialogInternal.puUseXenonFileSystem);
 				}
 
 				// draw dialog parts
@@ -3965,14 +3982,14 @@ namespace IGFD
 					}
 					else
 					{
-						fdi.puPathClicked = fdi.SelectDirectory(vInfos);
+						fdi.puPathClicked = fdi.SelectDirectory(vInfos, prFileDialogInternal.puUseXenonFileSystem);
 					}
 				}
 				else // no nav system => classic behavior
 				{
 					if (ImGui::IsMouseDoubleClicked(0)) // 0 -> left mouse button double click
 					{
-						fdi.puPathClicked = fdi.SelectDirectory(vInfos);
+						fdi.puPathClicked = fdi.SelectDirectory(vInfos, prFileDialogInternal.puUseXenonFileSystem);
 					}
 					else if (fdi.puDLGDirectoryMode) // directory chooser
 					{
@@ -4636,7 +4653,7 @@ IMGUIFILEDIALOG_API void IGFD_OpenDialog(
 	if (vContext)
 	{
 		vContext->OpenDialog(
-			vKey, vTitle, vFilters, vPath, vFileName,
+			vKey, vTitle, vFilters, vPath, vFileName, false,
 			vCountSelectionMax, vUserDatas, flags);
 	}
 }
@@ -4654,7 +4671,7 @@ IMGUIFILEDIALOG_API void IGFD_OpenDialog2(
 	if (vContext)
 	{
 		vContext->OpenDialog(
-			vKey, vTitle, vFilters, vFilePathName,
+			vKey, vTitle, vFilters, vFilePathName, false,
 			vCountSelectionMax, vUserDatas, flags);
 	}
 }
@@ -4677,7 +4694,7 @@ IMGUIFILEDIALOG_API void IGFD_OpenPaneDialog(
 		vContext->OpenDialog(
 			vKey, vTitle, vFilters,
 			vPath, vFileName,
-			vSidePane, vSidePaneWidth,
+			vSidePane, false, vSidePaneWidth,
 			vCountSelectionMax, vUserDatas, flags);
 	}
 }
@@ -4699,7 +4716,7 @@ IMGUIFILEDIALOG_API void IGFD_OpenPaneDialog2(
 		vContext->OpenDialog(
 			vKey, vTitle, vFilters,
 			vFilePathName,
-			vSidePane, vSidePaneWidth,
+			vSidePane, false, vSidePaneWidth,
 			vCountSelectionMax, vUserDatas, flags);
 	}
 }

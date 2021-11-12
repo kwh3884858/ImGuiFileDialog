@@ -906,15 +906,15 @@ namespace IGFD
 		void OpenCurrentPath(const FileDialogInternal& vFileDialogInternal);							// set the path of the dialog, will launch the directory scan for populate the file listview
 		void SortFields(const FileDialogInternal& vFileDialogInternal, 
 			const SortingFieldEnum& vSortingField, const bool& vCanChangeOrder);						// will sort a column
-		bool GetDrives();																				// list drives on windows platform
-		bool CreateDir(const std::string& vPath);														// create a directory on the file system
+		bool GetDrives(bool useXenonFileSystem = false);																				// list drives on windows platform
+		bool CreateDir(const std::string& vPath, bool useXenonFileSystem = false);														// create a directory on the file system
 		void ComposeNewPath(std::vector<std::string>::iterator vIter);									// compose a path from the compose path widget
 		bool SetPathOnParentDirectoryIfAny();															// compose paht on parent directory
 		std::string GetCurrentPath();																	// get the current path
 		void SetCurrentPath(const std::string& vCurrentPath);											// set the current path
 		static bool IsFileExist(const std::string& vFile);
 		void SetDefaultFileName(const std::string& vFileName);
-		bool SelectDirectory(const std::shared_ptr<FileInfos>& vInfos);										// enter directory
+		bool SelectDirectory(const std::shared_ptr<FileInfos>& vInfos, bool useXenonEngineFileSystem = false);										// enter directory
 		void SelectFileName(const FileDialogInternal& vFileDialogInternal, 
 			const std::shared_ptr<FileInfos>& vInfos);															// select filename
 		
@@ -1111,7 +1111,7 @@ namespace IGFD
 		int puLocaleCategory = LC_ALL;	// locale category to use
 		std::string puLocaleBegin; // the locale who will be applied at start of the display dialog
 		std::string puLocaleEnd; // the locale who will be applaied at end of the display dialog
-
+        bool puUseXenonFileSystem = false;
 	public:
 		void NewFrame();			// new frame, so maybe neded to do somethings, like reset events
 		void EndFrame();			// end frame, so maybe neded to do somethings fater all
@@ -1146,12 +1146,13 @@ namespace IGFD
 		virtual ~FileDialog();										// ImGuiFileDialog Destructor
 
 		// standard dialog
-		void OpenDialog(											// open simple dialog (path and fileName can be specified)
-			const std::string& vKey,								// key dialog
-			const std::string& vTitle,								// title
-			const char* vFilters,									// filters
-			const std::string& vPath,								// path
-			const std::string& vFileName,							// defaut file name
+        void OpenDialog(											// open simple dialog (path and fileName can be specified)
+            const std::string& vKey,								// key dialog
+            const std::string& vTitle,								// title
+            const char* vFilters,									// filters
+            const std::string& vPath,								// path
+            const std::string& vFileName,							// defaut file name
+            bool useXenonFileSystem = false,
 			const int& vCountSelectionMax = 1,						// count selection max
 			UserDatas vUserDatas = nullptr,							// user datas (can be retrieved in pane)
 			ImGuiFileDialogFlags vFlags = 0);						// ImGuiFileDialogFlags 
@@ -1161,6 +1162,7 @@ namespace IGFD
 			const std::string& vTitle,								// title
 			const char* vFilters,									// filters
 			const std::string& vFilePathName,						// file path name (will be decompsoed in path and fileName)
+            bool useXenonFileSystem = false,
 			const int& vCountSelectionMax = 1,						// count selection max
 			UserDatas vUserDatas = nullptr,							// user datas (can be retrieved in pane)
 			ImGuiFileDialogFlags vFlags = 0);						// ImGuiFileDialogFlags 
@@ -1173,6 +1175,7 @@ namespace IGFD
 			const std::string& vPath,								// path
 			const std::string& vFileName,							// defaut file name
 			const PaneFun& vSidePane,								// side pane
+            bool useXenonFileSystem = false,
 			const float& vSidePaneWidth = 250.0f,					// side pane width
 			const int& vCountSelectionMax = 1,						// count selection max
 			UserDatas vUserDatas = nullptr,							// user datas (can be retrieved in pane)
@@ -1184,6 +1187,7 @@ namespace IGFD
 			const char* vFilters,									// filters
 			const std::string& vFilePathName,						// file path name (will be decompsoed in path and fileName)
 			const PaneFun& vSidePane,								// side pane
+            bool useXenonFileSystem = false,
 			const float& vSidePaneWidth = 250.0f,					// side pane width
 			const int& vCountSelectionMax = 1,						// count selection max
 			UserDatas vUserDatas = nullptr,							// user datas (can be retrieved in pane)

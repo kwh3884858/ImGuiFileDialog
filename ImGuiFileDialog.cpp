@@ -1466,7 +1466,7 @@ namespace IGFD
 		return fileNameExt;
 	}
 
-	void IGFD::FileManager::AddFile(const FileDialogInternal& vFileDialogInternal, const std::string& vPath, const std::string& vFileName, const char& vFileType)
+	void IGFD::FileManager::AddFile(const FileDialogInternal& vFileDialogInternal, const std::string& vPath, const std::string& vFileName,  const char& vFileType, const std::string& fileGUID /*= std::string()*/)
 	{
 		auto infos = std::make_shared<FileInfos>();
 
@@ -1474,6 +1474,7 @@ namespace IGFD
 		infos->fileNameExt = vFileName;
 		infos->fileNameExt_optimized = prOptimizeFilenameForSearchOperations(infos->fileNameExt);
 		infos->fileType = vFileType;
+        infos->puGUID = fileGUID;
 
 		if (infos->fileNameExt.empty() || (infos->fileNameExt == "." && !vFileDialogInternal.puFilterManager.puDLGFilters.empty())) return; // filename empty or filename is the current dir '.' //-V807
 		if (infos->fileNameExt != ".." && (vFileDialogInternal.puDLGflags & ImGuiFileDialogFlags_DontShowHiddenFiles) && infos->fileNameExt[0] == '.') // dont show hidden files
@@ -1544,7 +1545,7 @@ namespace IGFD
                             fileType = 'f';
                             break;
                         }
-                        AddFile(vFileDialogInternal, path, file->GetFileHeader().GetFileName().CString(), fileType);
+                        AddFile(vFileDialogInternal, path, file->GetFileHeader().GetFileName().CString(), fileType, file->GetFileHeader().GetGUID().str());
                     }
                 }
                 SortFields(vFileDialogInternal, puSortingField, false);
@@ -4136,6 +4137,17 @@ namespace IGFD
 						if (ImGui::TableNextColumn()) // file name
 						{
 							needToBreakTheloop = prSelectableItem(i, infos, selected, _str.c_str());
+                            // Our buttons are both drag sources and drag targets here!
+                            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+                            {
+                                // Set payload to carry the index of our item (could be anything)
+                                ImGui::SetDragDropPayload("FILE_GUID", infos->puGUID.c_str(), infos->puGUID.size() + 1);
+
+                                // Display preview (could be anything, e.g. when dragging an image we could decide to display
+                                // the filename and a small preview of the image, etc.)
+                                ImGui::Text("Set %s %s", infos->fileNameExt.c_str(), infos->puGUID.c_str());
+                                ImGui::EndDragDropSource();
+                            }
 						}
 						if (ImGui::TableNextColumn()) // file type
 						{

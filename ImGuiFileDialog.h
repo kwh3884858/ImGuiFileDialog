@@ -813,6 +813,7 @@ namespace IGFD
 		std::string formatedFileSize;						// file size formated (10 o, 10 ko, 10 mo, 10 go)
 		std::string fileModifDate;							// file user defined format of the date (data + time by default)
 		std::shared_ptr<FileStyle> fileStyle = nullptr;		// style of the file
+        std::string puGUID;
 #ifdef USE_THUMBNAILS
 		IGFD_Thumbnail_Info thumbnailInfo;		// structre for the display for image file tetxure
 #endif // USE_THUMBNAILS
@@ -885,7 +886,7 @@ namespace IGFD
 		void prRemoveFileNameInSelection(const std::string& vFileName);									// selection : remove a file name
 		void prAddFileNameInSelection(const std::string& vFileName, bool vSetLastSelectionFileName);	// selection : add a file name
 		void AddFile(const FileDialogInternal& vFileDialogInternal, 
-			const std::string& vPath, const std::string& vFileName, const char& vFileType);				// add file called by scandir
+			const std::string& vPath, const std::string& vFileName,  const char& vFileType, const std::string& fileGUID = std::string());				// add file called by scandir
 
 	public:
 		FileManager();

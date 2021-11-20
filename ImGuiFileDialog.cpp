@@ -4148,6 +4148,13 @@ namespace IGFD
                                 ImGui::Text("Set %s %s", infos->fileNameExt.c_str(), infos->puGUID.c_str());
                                 ImGui::EndDragDropSource();
                             }
+							if (ImGui::BeginPopupContextItem())
+							{
+								if (ImGui::MenuItem("Delete")) {
+									EditorDatabase::Get().Delete( (infos->filePath + std::string(1u, PATH_SEP) + infos->fileNameExt).c_str());
+								}
+								ImGui::EndPopup();
+							}
 						}
 						if (ImGui::TableNextColumn()) // file type
 						{

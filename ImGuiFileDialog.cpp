@@ -4153,6 +4153,10 @@ namespace IGFD
 								if (ImGui::MenuItem("Delete")) {
 									EditorDatabase::Get().Delete( (infos->filePath + std::string(1u, PATH_SEP) + infos->fileNameExt).c_str());
 								}
+								if (ImGui::MenuItem("Show in Explorer"))
+								{
+									EditorDatabase::Get().ShowInExplorer((infos->filePath + std::string(1u, PATH_SEP) + infos->fileNameExt).c_str());
+								}
 								ImGui::EndPopup();
 							}
 						}

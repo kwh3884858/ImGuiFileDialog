@@ -2474,6 +2474,7 @@ namespace IGFD
 
 	void IGFD::ThumbnailFeature::EndThumbnailFrame(FileDialogInternal& vFileDialogInternal)
 	{
+		vFileDialogInternal;
 #ifdef USE_THUMBNAILS
 		prClearThumbnails(vFileDialogInternal);
 #endif
@@ -2481,6 +2482,7 @@ namespace IGFD
 
 	void IGFD::ThumbnailFeature::QuitThumbnailFrame(FileDialogInternal& vFileDialogInternal)
 	{
+		vFileDialogInternal;
 #ifdef USE_THUMBNAILS
 		prStopThumbnailFileDatasExtraction();
 		prClearThumbnails(vFileDialogInternal);
@@ -4506,6 +4508,8 @@ namespace IGFD
 
 	void IGFD::FileDialog::SetLocales(const int& vLocaleCategory, const std::string& vLocaleBegin, const std::string& vLocaleEnd)
 	{
+		vLocaleCategory;
+
 		prFileDialogInternal.puUseCustomLocale = true;
 		prFileDialogInternal.puLocaleBegin = vLocaleBegin;
 		prFileDialogInternal.puLocaleEnd = vLocaleEnd;

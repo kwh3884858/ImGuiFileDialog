@@ -932,6 +932,7 @@ namespace IGFD
 	public:
 		void DrawDirectoryCreation(const FileDialogInternal& vFileDialogInternal);						// draw directory creation widget
 		void DrawPathComposer(const FileDialogInternal& vFileDialogInternal);							// draw path composer widget
+		void RefreshWindow(const FileDialogInternal& vFileDialogInternal);
 	};
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

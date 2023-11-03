@@ -1535,10 +1535,10 @@ namespace IGFD
                         char fileType = 0;
                         switch (file->GetFileHeader().GetFileType())
                         {
-                        case CrossPlatform::None:
+						case FileType::FileTypeNone:
                             throw "Undefined File Type";
                             break;
-                        case CrossPlatform::FileTypeFolder:
+                        case FileType::FileTypeFolder:
                             fileType = 'd';
                             break;
                         default:
@@ -2231,19 +2231,26 @@ namespace IGFD
 		}
 	}
 
+	void IGFD::FileManager::RefreshWindow(const FileDialogInternal& vFileDialogInternal)
+	{
+		if (vFileDialogInternal.puUseXenonFileSystem)
+		{
+			SetCurrentPath(FileHeader::Root_Drive.CString());
+		}
+		else
+		{
+			SetCurrentPath(".");
+		}
+
+		EditorDatabase::Get().RequestRefreshContent();
+		OpenCurrentPath(vFileDialogInternal);
+	}
+
 	void IGFD::FileManager::DrawPathComposer(const FileDialogInternal& vFileDialogInternal)
 	{
 		if (IMGUI_BUTTON(resetButtonString))
 		{
-            if (vFileDialogInternal.puUseXenonFileSystem)
-            {
-                SetCurrentPath(FileHeader::Root_Drive.CString());
-            }
-            else
-            {
-                SetCurrentPath(".");
-            }
-			OpenCurrentPath(vFileDialogInternal);
+			RefreshWindow(vFileDialogInternal);
 		}
 		if (ImGui::IsItemHovered())
 			ImGui::SetTooltip(buttonResetPathString);
@@ -4154,10 +4161,15 @@ namespace IGFD
 							{
 								if (ImGui::MenuItem("Delete")) {
 									EditorDatabase::Get().Delete( (infos->filePath + std::string(1u, PATH_SEP) + infos->fileNameExt).c_str());
+									prFileDialogInternal.puFileManager.RefreshWindow(prFileDialogInternal);
+								}
+								if (ImGui::MenuItem("Open by default app"))
+								{
+									EditorDatabase::Get().ExecuteShell((infos->filePath + std::string(1u, PATH_SEP) + infos->fileNameExt).c_str());
 								}
 								if (ImGui::MenuItem("Show in Explorer"))
 								{
-									EditorDatabase::Get().ShowInExplorer((infos->filePath + std::string(1u, PATH_SEP) + infos->fileNameExt).c_str());
+									EditorDatabase::Get().ExecuteShell((infos->filePath).c_str());
 								}
 								ImGui::EndPopup();
 							}

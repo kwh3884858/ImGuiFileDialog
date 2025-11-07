@@ -4165,11 +4165,11 @@ namespace IGFD
 								}
 								if (ImGui::MenuItem("Open by default app"))
 								{
-									EditorDatabase::Get().ExecuteShell((infos->filePath + std::string(1u, PATH_SEP) + infos->fileNameExt).c_str());
+									EditorDatabase::Get().ShowInExplorer((infos->filePath + std::string(1u, PATH_SEP) + infos->fileNameExt).c_str());
 								}
 								if (ImGui::MenuItem("Show in Explorer"))
 								{
-									EditorDatabase::Get().ExecuteShell((infos->filePath).c_str());
+									EditorDatabase::Get().ShowInExplorer((infos->filePath).c_str());
 								}
 								ImGui::EndPopup();
 							}

@@ -77,10 +77,10 @@ using namespace CrossPlatform;
 	#define PATH_SEP '/'
 #endif // defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
 
-#include "imgui.h"
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 	#define IMGUI_DEFINE_MATH_OPERATORS
 #endif // IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui.h"
 #include "imgui_internal.h"
 
 #include <cstdlib>
@@ -2438,14 +2438,13 @@ namespace IGFD
 
 		if (puFileManager.puInputPathActivated)
 		{
-			auto gio = ImGui::GetIO();
-			if (ImGui::IsKeyReleased(gio.KeyMap[ImGuiKey_Enter]))
+			if (ImGui::IsKeyReleased(ImGuiKey_Enter))
 			{
 				puFileManager.SetCurrentPath(std::string(puFileManager.puInputPathBuffer));
 				puFileManager.OpenCurrentPath(*this);
 				puFileManager.puInputPathActivated = false;
 			}
-			if (ImGui::IsKeyReleased(gio.KeyMap[ImGuiKey_Escape]))
+			if (ImGui::IsKeyReleased(ImGuiKey_Escape))
 			{
 				puFileManager.puInputPathActivated = false;
 			}
